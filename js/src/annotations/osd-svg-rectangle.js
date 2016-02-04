@@ -2,7 +2,7 @@
   $.Rectangle = function(options) {
     jQuery.extend(this, {
       name: 'Rectangle',
-      logoClass: 'square',
+      logoClass: 'check_box_outline_blank',
       idPrefix: 'rectangle_'
     }, options);
 

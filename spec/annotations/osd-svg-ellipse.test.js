@@ -71,8 +71,6 @@ describe('Ellipse', function() {
 
     expect(shape.data.rotation).toBe(0);
 
-    expect(shape.fullySelected).toBe(true);
-
     expect(shape.name).toBe(this.ellipse.idPrefix + '1');
 
     expect(shape.segments.length).toBe(8);
@@ -207,6 +205,29 @@ describe('Ellipse', function() {
 
       expect(this.shape.segments[7].point.x + event.delta.x * diagonalSize).toBeCloseTo(this.initialPoint.x - diagonalSize - 1, 1);
       expect(this.shape.segments[7].point.y).toBeCloseTo(this.initialPoint.y - 1, 1);
+
+      event = getEvent({
+        'x': -100,
+        'y': 10
+      });
+      overlay = getOverlay(paper, '#ff0000', '#00ff00', 1.0, 'create', this.shape, null);
+      var expected = [];
+      for (var idx = 0; idx < this.shape.segments.length; idx++) {
+        var point = {
+          'x': this.shape.segments[idx].point.x,
+          'y': this.shape.segments[idx].point.y
+        };
+        point.x += event.delta.x / 2 + Math.cos((3 - idx) * Math.PI / 4) * event.delta.x / 2;
+        point.y += event.delta.y / 2 - Math.sin((3 - idx) * Math.PI / 4) * event.delta.y / 2;
+        expected.push(point);
+      }
+      this.ellipse.onMouseDrag(event, overlay);
+
+      expect(this.shape.segments.length).toBe(expected.length);
+      for (var idx = 0; idx < this.shape.segments.length; idx++) {
+        expect(this.shape.segments[idx].point.x).toBeCloseTo(expected[idx].x, 1);
+        expect(this.shape.segments[idx].point.y).toBeCloseTo(expected[idx].y, 1);
+      }
     });
 
     function rotatePoint(point, initialPoint, angle) {
