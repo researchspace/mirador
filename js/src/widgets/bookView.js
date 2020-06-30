@@ -9,6 +9,7 @@
       stitchList:       [],
       canvasID:          null,
       imagesList:       [],
+      imagesListRtl:       [],
       element:          null,
       focusImages:      [],
       manifest:         null,
@@ -32,6 +33,9 @@
 
     init: function() {
       var _this = this;
+      if(this.vDirectionStatus == 'rtl'){
+        this.imagesList =  this.imagesListRtl.concat();
+      }
       if (this.canvasID !== null) {
         this.currentImgIndex = $.getImageIndexById(this.imagesList, this.canvasID);
       }
@@ -79,14 +83,14 @@
     },
 
     template: $.Handlebars.compile([
-                                 '<div class="book-view">',
-                                 '</div>'
+      '<div class="book-view">',
+      '</div>'
     ].join('')),
 
     listenForActions: function() {
       var _this = this,
-      firstCanvasId = _this.imagesList[0]['@id'],
-      lastCanvasId = _this.imagesList[_this.imagesList.length-1]['@id'];
+          firstCanvasId = _this.imagesList[0]['@id'],
+          lastCanvasId = _this.imagesList[_this.imagesList.length-1]['@id'];
 
       _this.eventEmitter.subscribe('bottomPanelSet.' + _this.windowId, function(event, visible) {
         var dodgers = _this.element.find('.mirador-osd-toggle-bottom-panel, .mirador-pan-zoom-controls');
@@ -121,7 +125,7 @@
       });
     },
 
-bindEvents: function() {
+    bindEvents: function() {
       var _this = this;
 
       this.element.find('.mirador-osd-next').on('click', function() {
@@ -196,12 +200,12 @@ bindEvents: function() {
       this.osdOptions.osdBounds = this.osd.viewport.getBounds(true);
       _this.eventEmitter.publish("imageBoundsUpdated", {
         id: _this.windowId,
-          osdBounds: {
-            x: _this.osdOptions.osdBounds.x,
-            y: _this.osdOptions.osdBounds.y,
-            width: _this.osdOptions.osdBounds.width,
-            height: _this.osdOptions.osdBounds.height
-          }
+        osdBounds: {
+          x: _this.osdOptions.osdBounds.x,
+          y: _this.osdOptions.osdBounds.y,
+          width: _this.osdOptions.osdBounds.width,
+          height: _this.osdOptions.osdBounds.height
+        }
       });
     },
 
@@ -265,19 +269,19 @@ bindEvents: function() {
 
     createOpenSeadragonInstance: function() {
       var uniqueID = $.genUUID(),
-      osdId = 'mirador-osd-' + uniqueID,
-      osdToolBarId = osdId + '-toolbar',
-      elemOsd,
-      tileSources = [],
-      _this = this,
-      toolbarID = 'osd-toolbar-' + uniqueID,
-      dfd = jQuery.Deferred();
+          osdId = 'mirador-osd-' + uniqueID,
+          osdToolBarId = osdId + '-toolbar',
+          elemOsd,
+          tileSources = [],
+          _this = this,
+          toolbarID = 'osd-toolbar-' + uniqueID,
+          dfd = jQuery.Deferred();
 
       this.element.find('.' + this.osdCls).remove();
 
       jQuery.each(this.stitchList, function(index, image) {
         var imageUrl = $.Iiif.getImageUrl(image),
-        infoJsonUrl = imageUrl + '/info.json';
+            infoJsonUrl = imageUrl + '/info.json';
 
         jQuery.getJSON(infoJsonUrl).done(function (data, status, jqXHR) {
           tileSources.splice(index, 0, data);
@@ -290,9 +294,9 @@ bindEvents: function() {
 
         elemOsd =
           jQuery('<div/>')
-        .addClass(_this.osdCls)
-        .attr('id', osdId)
-        .appendTo(_this.element);
+          .addClass(_this.osdCls)
+          .attr('id', osdId)
+          .appendTo(_this.element);
 
         _this.osd = $.OpenSeadragon({
           'id':           elemOsd.attr('id'),
@@ -402,11 +406,12 @@ bindEvents: function() {
       // Default to 'paged' and 'left-to-right'
       // Set index(es) for any other images to stitch with selected image
       var stitchList = [],
-      leftIndex = [],
-      rightIndex = [],
-      topIndex = [],
-      bottomIndex = [],
-      _this = this;
+          leftIndex = [],
+          rightIndex = [],
+          topIndex = [],
+          bottomIndex = [],
+          viewAdjustedImgIndex = this.currentImgIndex,
+          _this = this;
 
       this.focusImages = [];
 
@@ -414,53 +419,59 @@ bindEvents: function() {
         // don't do any stitching, display like an imageView
         stitchList = [this.currentImg];
       } else if (this.viewingHint === 'paged') {
+
+        // For RTL work out index from right hand side.
+        if (this.viewingDirection === 'right-to-left') {
+          viewAdjustedImgIndex = (this.imagesList.length-1) - this.currentImgIndex;
+        }
+
         // determine the other image for this pair based on index and viewingDirection
-        if (this.currentImgIndex === 0 || this.currentImgIndex === this.imagesList.length-1) {
+        if (viewAdjustedImgIndex === 0 || viewAdjustedImgIndex === this.imagesList.length-1) {
           //first page (front cover) or last page (back cover), display on its own
           stitchList = [this.currentImg];
-        } else if (this.currentImgIndex % 2 === 0) {
+        } else if (viewAdjustedImgIndex % 2 === 0) {
           // even, get previous page.  set order in array based on viewingDirection
           switch (this.viewingDirection) {
-            case "left-to-right":
-              leftIndex[0] = this.currentImgIndex-1;
+          case "left-to-right":
+            leftIndex[0] = this.currentImgIndex-1;
             stitchList = [this.imagesList[this.currentImgIndex-1], this.currentImg];
             break;
-            case "right-to-left":
-              rightIndex[0] = this.currentImgIndex-1;
-            stitchList = [this.currentImg, this.imagesList[this.currentImgIndex-1]];
+          case "right-to-left":
+            rightIndex[0] = this.currentImgIndex+1;
+            stitchList = [this.currentImg, this.imagesList[this.currentImgIndex+1]];
             break;
-            case "top-to-bottom":
-              topIndex[0] = this.currentImgIndex-1;
+          case "top-to-bottom":
+            topIndex[0] = this.currentImgIndex-1;
             stitchList = [this.imagesList[this.currentImgIndex-1], this.currentImg];
             break;
-            case "bottom-to-top":
-              bottomIndex[0] = this.currentImgIndex-1;
+          case "bottom-to-top":
+            bottomIndex[0] = this.currentImgIndex-1;
             stitchList = [this.currentImg, this.imagesList[this.currentImgIndex-1]];
             break;
-            default:
-              break;
+          default:
+            break;
           }
         } else {
           // odd, get next page
           switch (this.viewingDirection) {
-            case "left-to-right":
-              rightIndex[0] = this.currentImgIndex+1;
+          case "left-to-right":
+            rightIndex[0] = this.currentImgIndex+1;
             stitchList = [this.currentImg, this.imagesList[this.currentImgIndex+1]];
             break;
-            case "right-to-left":
-              leftIndex[0] = this.currentImgIndex+1;
-            stitchList = [this.imagesList[this.currentImgIndex+1], this.currentImg];
+          case "right-to-left":
+            leftIndex[0] = this.currentImgIndex-1;
+            stitchList = [this.imagesList[this.currentImgIndex-1], this.currentImg];
             break;
-            case "top-to-bottom":
-              bottomIndex[0] = this.currentImgIndex+1;
+          case "top-to-bottom":
+            bottomIndex[0] = this.currentImgIndex+1;
             stitchList = [this.currentImg, this.imagesList[this.currentImgIndex+1]];
             break;
-            case "bottom-to-top":
-              topIndex[0] = this.currentImgIndex+1;
+          case "bottom-to-top":
+            topIndex[0] = this.currentImgIndex+1;
             stitchList = [this.imagesList[this.currentImgIndex+1], this.currentImg];
             break;
-            default:
-              break;
+          default:
+            break;
           }
         }
       } else if (this.viewingHint === 'continuous') {

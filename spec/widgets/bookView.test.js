@@ -510,7 +510,7 @@ describe('BookView', function() {
       });
       it('stitches right-to-left', function() {
         subject.viewingDirection = 'right-to-left';
-        expect(subject.getStitchList()).toEqual([this.imagesList[4], this.imagesList[3]]);
+        expect(subject.getStitchList()).toEqual([this.imagesList[3], this.imagesList[4]]);
       });
       it('stitches top-down', function() {
         subject.viewingDirection = 'top-to-bottom';
@@ -533,7 +533,7 @@ describe('BookView', function() {
       });
       it('stitches right-to-left', function() {
         subject.viewingDirection = 'right-to-left';
-        expect(subject.getStitchList()).toEqual([this.imagesList[6], this.imagesList[5]]);
+        expect(subject.getStitchList()).toEqual([this.imagesList[5], this.imagesList[6]]);
       });
       it('stitches top-down', function() {
         subject.viewingDirection = 'top-to-bottom';
@@ -542,6 +542,35 @@ describe('BookView', function() {
       it('stitches bottom-up', function() {
         subject.viewingDirection = 'bottom-to-top';
         expect(subject.getStitchList()).toEqual([this.imagesList[6], this.imagesList[5]]);
+      });
+    });
+
+    describe('Order of imagesList', function() {
+      it('should be reversed for r-t-l sequences and manifests', function() {
+
+        this.fixture.viewingDirection = "right-to-left";
+        var manifest = new Mirador.Manifest(
+          this.fixture['@id'], 'IIIF', this.fixture
+        ),
+            imagesList = manifest.getCanvases(),
+            imagesListLtr = imagesList.concat(),
+            imagesListRtl = imagesList.concat();
+        imagesListRtl.reverse();
+        var bookView = new Mirador.BookView({
+          manifest: manifest,
+          appendTo: this.appendTo,
+          windowId: this.windowId,
+          eventEmitter: this.eventEmitter,
+          imagesList: imagesList,
+          imagesListLtr: imagesListLtr,
+          imagesListRtl: imagesListRtl,
+          state: this.state,
+          bottomPanelAvailable: true,
+          annoEndpointAvailable: true,
+          canvasControls: this.canvasControls,
+          annotationState: this.canvasControls.annotations.annotationState
+        });
+        expect(imagesList[imagesList.length - 1]).toBe(bookView.imagesListRtl[0]);
       });
     });
     // TODO: Fill this in once implemented
